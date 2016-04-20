@@ -1,0 +1,51 @@
+-branch = m["branch"]
+-local_changes = m["local_changes"][:local_changes] rescue []
+-file_system_revision = m["revision"]
+-github_diff_summary = m["diff"]
+-github_diff_files = m["diff_files"]
+-file_system_date = m["date"]
+-last_deployed_revision = m["last_start_statistics"]["revision"] rescue "?"
+-last_deployed_branch = m["last_start_statistics"]["branch"] rescue "?"
+
+-if last_deployed_revision
+  %div
+    %strong Deployed: 
+    =link_to "http://github.com/#{project}/tree/#{last_deployed_branch}", target: "_blank" do
+      #{last_deployed_branch} 
+    (
+    =link_to last_deployed_revision, "http://github.com/#{project}/commit/#{last_deployed_revision}", target: "_blank"
+    )
+%div
+  %strong Checked Out:
+  =link_to "http://github.com/#{project}/tree/#{branch}", target: "_blank" do
+    %b #{branch} 
+  -if last_deployed_revision != file_system_revision
+    (
+    =link_to file_system_revision, "https://github.com/iCentris/#{project}/compare/#{last_deployed_revision}...#{file_system_revision}"
+    )
+  -else
+    (Deployed)
+  %div{style:"padding-left:110px;"}
+    @#{file_system_date}
+
+-if local_changes.present?
+  .local-changes{style:"color:#333;background-color:rgba(255,0,0,0.3);padding:5px;margin-bottom:5px;"}
+    %div.strong modified locally: (will be reverted with code pull) 
+    =local_changes.join("<br/>").html_safe
+-if github_diff_summary.blank? 
+  %div{style:"color:#333;background-color:#00FF66;font-weight:700;padding:5px;"} NO FILES TO PULL
+-else
+  .collapse-group{style:"color:#333;background-color:rgba(255,102,0,0.3);font-weight:700;padding:5px;margin-bottom:5px;"} 
+    =link_to "Show", "javascript:void();", onclick: "$(this).closest('.collapse-group').find('.collapse').collapse('toggle');", class: "btn btn-primary", style: "padding:3px;font-size:0.8em;margin-right:5px;"
+    #{github_diff_summary}
+    =link_to "Github Diff", "https://github.com/#{git_project}/compare/#{file_system_revision}...#{branch}", target: "_blank", class: "btn btn-primary pull-right", "data-method" => "get"
+    .clearfix   
+    %p.collapse
+      =github_diff_files.gsub("\n","<br/>").html_safe      
+  -if e == :local 
+    -confirm_message = "This will pull code from Github but will require a server restart to notice changes."
+    -if local_changes.present? 
+      -confirm_message << "<br/><br/>Additionally the following local files will be reverted:<br/><br/>"
+      -confirm_message << local_changes.join("<br/>")
+    %div=link_to "Pull from Github", pull_code_pyr_core_pyr_admin_index_path, class: "btn btn-success", "data-confirm" => "#{confirm_message}<br/><br/>Continue?", "data-method" => "get"
+ 

@@ -1,0 +1,58 @@
+
+%h1
+  Code Environments
+  %small.pull-right
+    =link_to "#upgrade_path", class:"btn btn-primary", data: {toggle: "modal"} do
+      %i.ic-icon-lg.ic-icon-tasks{style:"color: white;"}
+-@config.each do |e, servers| 
+  =render "server_table", e: e, servers: servers
+
+#upgrade_path.modal
+  .modal-header
+    .modal-title Upgrade Path
+  .modal-body
+    .div{style:"width:1000px;"}
+      %pre
+        = File.read("#{::Rails.root}/../pyr/upgrade_path.yml") rescue "N/A"
+
+-if @command
+  #command-status
+    -if @exit_status && @exit_status != 0
+      .alert.alert-danger Command Results - ERRORS!
+    -elsif @exit_status && @exit_status == 0
+      .alert.alert-success Command Results - SUCCESS
+    -else
+      .alert Command Results
+-if @command.present? || @log_file.present?
+  %div
+    #command=@command
+    -if @command_results
+      #command-results=@command_results.gsub("\n","<br/>").html_safe
+    -elsif @log_file
+      =render "tail_log_console", log_file: @log_file, lines: 1024, detect_end_strategy: "async_command"
+
+:css
+  #command {
+    width:100%;
+    font-weight:800;
+    padding:5px;
+  }
+
+  #command-results {
+    width_100%;
+    border:1px dashed #333;
+    background-color: #ccc;
+    padding:10px;
+  }
+
+  .phased-restart-in-progress {
+    font-weight: 800;
+    padding:10px;
+    margin:10px;
+    background: #a0e000;
+  }
+
+  .phased-restart-in-progress .small {
+    margin-left:20px;
+    font-weight: 500;
+  }

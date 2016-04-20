@@ -54,11 +54,10 @@ class WebRedeploy::AppController < ApplicationController
   end
 
   def pull_code
-    project = params[:project]  # pyr, pyr-greenzone, etc...
-    command, command_results, exit_status = WebRedeploy::System.pull_code(project)
+    command, command_results, exit_status = WebRedeploy::System.pull_code
     Rails.logger.info("")
     Rails.logger.info("")
-    Rails.logger.info("pull_code(#{project}) RESULTS:")
+    Rails.logger.info("pull_code() RESULTS:")
     Rails.logger.info("             command: #{command}")
     Rails.logger.info("             command_results: #{command_results}")
     Rails.logger.info("             exit_status: #{exit_status}")

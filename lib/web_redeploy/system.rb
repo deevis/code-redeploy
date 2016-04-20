@@ -366,7 +366,6 @@ module WebRedeploy
       t1 = Thread.new do
         ActiveRecord::Base.connection_pool.with_connection do
           {
-            partition_id: PARTITION_ID,
             rails_root: ::Rails.root.to_s,
             branch: company_branch,
             releases: company_releases,
@@ -394,8 +393,6 @@ module WebRedeploy
           `git diff --name-only #{company_branch} origin/#{company_branch}`.strip]
         end
 
-        `cd ../pyr;git fetch origin #{pyr_branch}`
-        pyr_diff = `cd ../pyr;git diff --shortstat #{pyr_branch} origin/#{pyr_branch}`.strip
 
         diff, diff_files = t2.value
         diff_cache[:diff] = diff
@@ -415,6 +412,13 @@ module WebRedeploy
       rev = `git log -n 1 | grep 'commit'`.gsub("commit ","").split("\n").first
       rev.gsub!("# ", "") if rev.start_with?("# ")  # sometimes git output has '# ' before each line of output
       rev
+    end
+
+    def self.github_project
+      remotes = `git remote -v`.split("\n") 
+      r = remotes.select{|r| r.index("origin") && r.index("fetch") }.first
+      puts "Using remote:  #{r}"
+      r.match(/.*github.com\/(.*)\.git.*/)[1]
     end
 
     # eg: git_releases("../pyr")

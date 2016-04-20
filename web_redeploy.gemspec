@@ -15,6 +15,7 @@ Gem::Specification.new do |gem|
   gem.summary = "Web-based code redeploys"
 
   gem.add_runtime_dependency 'rails'
+  gem.add_runtime_dependency 'haml'
   
   gem.add_development_dependency 'better_errors'
   gem.add_development_dependency 'binding_of_caller'
