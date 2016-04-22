@@ -17,6 +17,8 @@ Default views are styled using Bootstrap classes.
 
 ### Running locally
 
+`bundle install`
+
 `cd spec/dummy`
 
 `rake db:create db:migrate`
