@@ -1,0 +1,43 @@
+%h1 Database Statistics
+
+-c,d,i = 0,0,0
+
+-db_info=Rails.configuration.database_configuration[Rails.env]
+
+%div{style:"padding:10px;"}
+  - db_info.each do |key, value|
+    -next if key == "password"
+    %div{style:"margin-right:15px;float:left;"}
+      %strong #{key}:
+      =value
+  .clearfix
+
+-if String === @table_data
+  %h3
+    %i
+      =@table_data
+-else
+  %table.table.table-striped
+    %tr
+      %th Table Name
+      %th Rows
+      %th Data Size
+      %th Index Size
+      %th Total Size
+    -@table_data.each do |r| 
+      -c+=r[:rows]
+      -d+=r[:data_size]
+      -i+=r[:index_size]
+      %tr
+        %td=r[:name]
+        %td=number_with_delimiter(r[:rows])
+        %td=number_to_human_size(r[:data_size])
+        %td=number_to_human_size(r[:index_size])
+        %td=number_to_human_size(r[:data_size] + r[:index_size])
+
+    %tr
+      %th Totals
+      %th=number_with_delimiter(c)
+      %th=number_to_human_size(d)
+      %th=number_to_human_size(i)
+      %th=number_to_human_size(d+i)

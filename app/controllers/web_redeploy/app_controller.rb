@@ -3,10 +3,15 @@ class WebRedeploy::AppController < ApplicationController
   before_action :authorize_user, except: [:version_info]
 
   def database_statistics
-    db_name = Rails.configuration.database_configuration[Rails.env]["database"]
-    sql = "SELECT table_name AS name, table_rows, data_length, index_length FROM information_schema.TABLES  WHERE table_schema = '#{db_name}' ORDER BY (data_length + index_length) DESC;"
-    @table_data = ActiveRecord::Base.connection.execute(sql).map do |r|
-      { name: r[0], rows: r[1], data_size: r[2], index_size: r[3] }
+    case ActiveRecord::Base.connection.class.to_s
+    when "ActiveRecord::ConnectionAdapters::MysqlAdapter"
+      db_name = Rails.configuration.database_configuration[Rails.env]["database"]
+      sql = "SELECT table_name AS name, table_rows, data_length, index_length FROM information_schema.TABLES  WHERE table_schema = '#{db_name}' ORDER BY (data_length + index_length) DESC;"
+      @table_data = ActiveRecord::Base.connection.execute(sql).map do |r|
+        { name: r[0], rows: r[1], data_size: r[2], index_size: r[3] }
+      end
+    when "ActiveRecord::ConnectionAdapters::SQLite3Adapter"
+      @table_data = "Not implemented for SQLite3" 
     end
   end
 

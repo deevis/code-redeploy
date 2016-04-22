@@ -38,8 +38,8 @@
                 Change Branch:
                 -disable_option = true # Don't enable switching until current is shown (no going back, yet)
                 %select#deployed_branch{name:"deployed_branch"}
-                  -( (m["company_releases"] & m["pyr_releases"] || [] ) ) .each do |r|
-                    -if r == m["company_branch"]
+                  -( (m["releases"] || [] ) ) .each do |r|
+                    -if r == m["branch"]
                       -disable_option = false
                       %option{value:r, selected:true }=r
                     -else

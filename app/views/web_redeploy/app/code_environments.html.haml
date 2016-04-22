@@ -13,7 +13,7 @@
   .modal-body
     .div{style:"width:1000px;"}
       %pre
-        = File.read("#{::Rails.root}/../pyr/upgrade_path.yml") rescue "N/A"
+        = File.read("#{::Rails.root}/config/upgrade_path.yml") rescue "N/A"
 
 -if @command
   #command-status
