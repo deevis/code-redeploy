@@ -1,6 +1,6 @@
 class WebRedeploy::AppController < ApplicationController
 
-  before_action :authorize_user
+  before_action :authorize_user, except: [:version_info]
 
   def database_statistics
     db_name = Rails.configuration.database_configuration[Rails.env]["database"]
@@ -136,6 +136,11 @@ class WebRedeploy::AppController < ApplicationController
       wants.html{ render }
       wants.json{ render(:json => data) }
     end
+  end
+
+  def version_info
+    include_diffs = (params[:diffs] != "false")
+    render :status => 200, json: WebRedeploy::System.build_version_info(include_diffs)
   end
 
 
