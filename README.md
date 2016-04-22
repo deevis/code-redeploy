@@ -10,6 +10,10 @@ Default views are styled using Bootstrap classes.
 
 # Add to your Rails Application
 
+Gemfile
+
+`gem 'web_redeploy', github: 'deevis/web_redeploy' 
+
 
 
 
