@@ -12,7 +12,7 @@ Default views are styled using Bootstrap classes.
 
 Gemfile
 
-`gem 'web_redeploy', github: 'deevis/web_redeploy' 
+`gem 'web_redeploy', github: 'deevis/web_redeploy`
 
 
 
