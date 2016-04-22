@@ -26,6 +26,7 @@ ActiveRecord::Schema.define(version: 20160422160741) do
     t.string   "command",                    limit: 500
     t.text     "command_results",            limit: 16777215
     t.string   "log_file",                   limit: 300
+    t.integer  "exit_status"
     t.datetime "start_time"
     t.datetime "end_time"
     t.datetime "created_at"

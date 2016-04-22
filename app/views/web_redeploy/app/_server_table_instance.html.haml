@@ -38,7 +38,7 @@
   .collapse-group{style:"color:#333;background-color:rgba(255,102,0,0.3);font-weight:700;padding:5px;margin-bottom:5px;"} 
     =link_to "Show", "javascript:void();", onclick: "$(this).closest('.collapse-group').find('.collapse').collapse('toggle');", class: "btn btn-primary", style: "padding:3px;font-size:0.8em;margin-right:5px;"
     #{github_diff_summary}
-    =link_to "Github Diff", "https://github.com/#{git_project}/compare/#{file_system_revision}...#{branch}", target: "_blank", class: "btn btn-primary pull-right", "data-method" => "get"
+    =link_to "Github Diff", "https://github.com/#{project}/compare/#{file_system_revision}...#{branch}", target: "_blank", class: "btn btn-primary pull-right", "data-method" => "get"
     .clearfix   
     %p.collapse
       =github_diff_files.gsub("\n","<br/>").html_safe      
@@ -47,5 +47,5 @@
     -if local_changes.present? 
       -confirm_message << "<br/><br/>Additionally the following local files will be reverted:<br/><br/>"
       -confirm_message << local_changes.join("<br/>")
-    %div=link_to "Pull from Github", pull_code_pyr_core_pyr_admin_index_path, class: "btn btn-success", "data-confirm" => "#{confirm_message}<br/><br/>Continue?", "data-method" => "get"
+    %div=link_to "Pull from Github", web_redeploy.pull_code_path, class: "btn btn-success", "data-confirm" => "#{confirm_message}<br/><br/>Continue?", "data-method" => "get"
  

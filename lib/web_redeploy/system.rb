@@ -82,7 +82,7 @@ module WebRedeploy
 
       da = WebRedeploy::DeploymentAction.create(  user_id: Thread.current[:user].try(:id),
                                             start_time: Time.current,
-                                              event: "pull_#{project_type}",
+                                              event: "pull",
                                               log_file: log_file )
 
       branch_info = git_branch # [branch, {local_changes: []}]
@@ -93,7 +93,7 @@ module WebRedeploy
         revert_command << local_changes.map{|lc| "git checkout -- #{lc}"}.join(" && ")
         revert_command << " && "
       end
-      old_revision = git_revision(project)
+      old_revision = git_revision
       cmd = "#{revert_command}git pull origin #{branch}"
       da.command = cmd
       if local_changes.present?
@@ -104,7 +104,7 @@ module WebRedeploy
             Rails.logger.warn "Not saving diff in DeploymentAction for super common: #{lc}"
             next
           end
-          diff_text = `#{pre_command}git diff #{lc}`
+          diff_text = `git diff #{lc}`
           if (diff_text.presence || "").length < 8192
             da.extras[:local_diffs][lc] = diff_text
           else
