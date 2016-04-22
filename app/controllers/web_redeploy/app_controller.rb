@@ -36,7 +36,7 @@ class WebRedeploy::AppController < ApplicationController
     fetch_origin = (params[:fetch_origin] != "false")
 
     if !fetch_origin && @@user_results[get_current_user]
-      Rails.logger.info("   code_environments: Using saved results for user: #{get_current_user.username}")
+      Rails.logger.info("   code_environments: Using saved results for user: #{get_current_user.try(:username) || get_current_user}")
       data = @@user_results[get_current_user]
       @command = data[:command]
       @command_results = data[:command_results]
@@ -80,6 +80,8 @@ class WebRedeploy::AppController < ApplicationController
     WebRedeploy::System.switch_branch(params[:new_branch])
     redirect_to web_redeploy.code_environments_path(fetch_origin: false)
   end
+
+
 
   def phased_restart
     command, log_file = WebRedeploy::System.phased_restart
