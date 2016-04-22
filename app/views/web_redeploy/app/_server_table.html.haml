@@ -14,7 +14,7 @@
             Deployed @ #{m["last_start_statistics"]["time"]}
           %div{style:"font-size:0.7em;color:darkgreen;"}
             Info generated in #{((m[:time_to_build]*100).to_i)/100.0 rescue "?"} seconds
-        -if e == :local && Rails.env.production?
+        -if e == :local && WebRedeploy.allow_redeploy
           -if @restart_info.present?
             .phased-restart-in-progress 
               Phased Restart In Progress
@@ -23,9 +23,9 @@
             -command, restart_tasks = WebRedeploy::System.build_restart_command
             %small
               =command
-            %div.pull-right=link_to "Bundle Install", bundle_install_pyr_core_pyr_admin_index_path, class: "btn btn-warning", "data-confirm" => "This will run a bundle install on it's own.  This is here primarily as an additional piece of tooling for troubleshooting.  The bundle install WILL ALSO BE RUN when you click Phased Restart!  Continue?", "data-method" => "get"
+            %div.pull-right=link_to "Bundle Install", web_redeploy.bundle_install_path, class: "btn btn-warning", "data-confirm" => "This will run a bundle install on it's own.  This is here primarily as an additional piece of tooling for troubleshooting.  The bundle install WILL ALSO BE RUN when you click Phased Restart!  Continue?", "data-method" => "get"
 
-            %div.pull-right=link_to "Phased Restart", phased_restart_pyr_core_pyr_admin_index_path, class: "btn btn-success", "data-confirm" => "This will initiate a phased-restart of your Puma cluster.  Continue?", "data-method" => "get"
+            %div.pull-right=link_to "Phased Restart", web_redeploy.phased_restart_path, class: "btn btn-success", "data-confirm" => "This will initiate a phased-restart of your Puma cluster.  Continue?", "data-method" => "get"
             .clearfix
             %ul
               -restart_tasks.each do |t|

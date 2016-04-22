@@ -1,5 +1,4 @@
 require "web_redeploy/engine"
-require "web_redeploy/system"
 require 'haml'
 
 module WebRedeploy
@@ -9,5 +8,8 @@ module WebRedeploy
 
   mattr_accessor :authorize_user 
   @@authorize_user = -> (user) { user.present? && user.try(:admin?) } 
+
+  mattr_accessor :allow_redeploy
+  @@allow_redeploy = Rails.env.production?
 
 end

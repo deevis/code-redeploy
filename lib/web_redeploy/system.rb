@@ -326,7 +326,7 @@ module WebRedeploy
       data[:time] = Time.current.strftime("%D %T")
       data[:event] = event_type
       Rails.logger.info "\n\n#{data}\n\n"
-      da.update_attributes( data.slice( :company_branch, :company_revision ))
+      da.update_attributes( data.slice( :branch, :revision ))
       da.schema_revision = data[:schema]
       da.save!
       File.open("#{::Rails.root}/../deployments/deploy.log", "a") do |f|
@@ -357,26 +357,23 @@ module WebRedeploy
     def self.build_version_info(regenerate_diffs=false)
       Rails.logger.info "\033[93mSystem.build_version_info(#{regenerate_diffs})\033[0m"
       start_seconds = Time.now
-      t1 = Thread.new do
-        [*git_branch, git_revision, git_releases]
-      end
+      Rails.logger.info "Getting branch, revision, releases" 
+      branch, local_changes = git_branch
+      revision = git_revision
+      releases = git_releases
+      Rails.logger.info "Getting puma processes" 
       server_processes = puma_server_processes
-      company_branch, company_local_changes, company_revision, company_releases = t1.value   # This code blocks until t1 is complete
 
-      t1 = Thread.new do
-        ActiveRecord::Base.connection_pool.with_connection do
-          {
+      config = {
             rails_root: ::Rails.root.to_s,
-            branch: company_branch,
-            releases: company_releases,
-            local_changes: company_local_changes,
-            revision: company_revision,
+            branch: branch,
+            releases: releases,
+            local_changes: local_changes,
+            revision: revision,
             date: `git log -n 1 | grep 'Date:'`.gsub("Date: ","").split("\n").first,
             server_processes: server_processes,
             schema: ActiveRecord::SchemaMigration.order("version desc").limit(1).pluck(:version).first
-          }
-        end
-      end
+      }
 
       diff_cache = Rails.cache.fetch("WebRedeploy::System::diff_cache") do
         {}
@@ -386,35 +383,38 @@ module WebRedeploy
       m = {}.merge!(diff_cache)
 
       if regenerate_diffs || diff_cache.blank?
-        Rails.logger.info "   REGENERATING DIFFS"
-        t2 = Thread.new do
-          `git fetch origin #{company_branch}`
-          [`git diff --shortstat #{company_branch} origin/#{company_branch}`.strip,
-          `git diff --name-only #{company_branch} origin/#{company_branch}`.strip]
-        end
-
-
-        diff, diff_files = t2.value
+        git_fetch_origin(branch)
+        Rails.logger.info "   Getting diff"
+        diff = `git diff --shortstat #{branch} origin/#{branch}`.strip
+        Rails.logger.info "   Getting diff files"
+        diff_files = `git diff --name-only #{branch} origin/#{branch}`.strip
         diff_cache[:diff] = diff
         diff_cache[:diff_files] = diff_files
         Rails.logger.info "\033[93mstoring diff_cache\033[0m: #{diff_cache}"
         Rails.cache.write("WebRedeploy::System::diff_cache", diff_cache, expires_in: 5.minutes)
       end
       m[:last_start_statistics] = get_last_start_statistics
-      m.merge!(t1.value)    # again - this will block until t1 is complete
+      m.merge!(config)    # again - this will block until t1 is complete
       m[:time_to_build] = Time.now - start_seconds
-      Rails.logger.info "\033[93m   BUILT version_info\033[0m: #{m}"
+      Rails.logger.info "\033[93m   BUILT version_info (#{m[:time_to_build]} seconds)\033[0m: #{m}"
       m.with_indifferent_access
     end
 
+    def self.git_fetch_origin(branch = '')
+      Rails.logger.info "   Fetching from origin"
+      `git fetch origin #{branch}`
+    end 
+
     # eg: git_revision("../pyr")
     def self.git_revision
+      Rails.logger.info "Git Revision..."
       rev = `git log -n 1 | grep 'commit'`.gsub("commit ","").split("\n").first
       rev.gsub!("# ", "") if rev.start_with?("# ")  # sometimes git output has '# ' before each line of output
       rev
     end
 
     def self.github_project
+      Rails.logger.info "Git Project"
       remotes = `git remote -v`.split("\n") 
       r = remotes.select{|r| r.index("origin") && r.index("fetch") }.first
       puts "Using remote:  #{r}"
@@ -423,6 +423,7 @@ module WebRedeploy
 
     # eg: git_releases("../pyr")
     def self.git_releases
+      Rails.logger.info "Git Releases"
       releases = `git branch -a`.split.map do |b|
         n = b.split("/").last; (n.length <= 4 && n =~ /\./) ? n : nil
       end.compact.sort.uniq
@@ -433,6 +434,7 @@ module WebRedeploy
     # returns [branchName, { local_changess: [file1, file2] }]
     #
     def self.git_branch
+      Rails.logger.info "Git Branch"
       results = `git status`
       lines = results.split("\n")
       lines.each{|l| l.gsub!(/^#/, ""); l.squish!}
@@ -552,7 +554,7 @@ module WebRedeploy
       Rails.logger.info("stat_now = #{stat_now}")
       system_user = stat_now[:server_processes].first[:user] rescue nil
       if stat_then
-        diff = git_file_diff(stat_then[:company_revision], stat_now[:company_revision])
+        diff = git_file_diff(stat_then[:revision], stat_now[:revision])
         Rails.logger.info("diff: #{diff}")
         if da && Rails.env.production?  # This could be ginormous locally cuz stat_then could be ancient
           da.extras[:stat_then] = stat_then
@@ -560,10 +562,10 @@ module WebRedeploy
           da.extras[:diff] = diff
           da.save!
         end
-        task_chain.unshift(:ruby_upgrade) if full_diff.index(".ruby-version")
-        task_chain.unshift(:assets_precompile) if full_diff.detect{|f| is_asset_precompile_file(f)} || full_diff.index("Gemfile.lock") || pyr_diff.index("common_pyr_dependencies.rb")
-        task_chain.unshift(:db_migrate) if pyr_diff.detect{|f| f.start_with?("db-migrate")} || diff.detect{|f| f.start_with?("db/migrate")}
-        task_chain.unshift(:bundle_install) if full_diff.index("Gemfile.lock") || pyr_diff.index("common_pyr_dependencies.rb")
+        task_chain.unshift(:ruby_upgrade) if diff.index(".ruby-version")
+        task_chain.unshift(:assets_precompile) if diff.detect{|f| is_asset_precompile_file(f)} || diff.index("Gemfile.lock")
+        task_chain.unshift(:db_migrate) if diff.detect{|f| f.start_with?("db/migrate")}
+        task_chain.unshift(:bundle_install) if diff.index("Gemfile.lock")
         if da
           da.required_bundle_install = task_chain.include?(:bundle_install)
           da.required_migrations = task_chain.include?(:db_migrate)
