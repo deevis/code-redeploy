@@ -1,5 +1,7 @@
 class WebRedeploy::AppController < ApplicationController
 
+  before_action :authorize_user
+
   def database_statistics
     db_name = Rails.configuration.database_configuration[Rails.env]["database"]
     sql = "SELECT table_name AS name, table_rows, data_length, index_length FROM information_schema.TABLES  WHERE table_schema = '#{db_name}' ORDER BY (data_length + index_length) DESC;"
@@ -68,7 +70,7 @@ class WebRedeploy::AppController < ApplicationController
   end
 
   def switch_branch
-    PyrCore::System.switch_branch(params[:new_branch])
+    WebRedeploy::System.switch_branch(params[:new_branch])
     redirect_to code_environments_pyr_core_pyr_admin_index_path(fetch_origin: false)
   end
 
@@ -123,7 +125,7 @@ class WebRedeploy::AppController < ApplicationController
     end
     data = { lines: @lines, success: "unknown" }
     if detect_end_strategy == "async_command"
-      # see PyrCore::System.run_async_console_command
+      # see WebRedeploy::System.run_async_console_command
       if results.index("Execution completed without errors")
         data[:success] = "true"
       elsif results.index("ERROR: Execution failed with EXIT_STATUS")
@@ -159,6 +161,10 @@ class WebRedeploy::AppController < ApplicationController
         end
       end
     end
+  end
+
+  def authorize_user 
+    WebRedeploy.authorize_user.call 
   end
 
 end

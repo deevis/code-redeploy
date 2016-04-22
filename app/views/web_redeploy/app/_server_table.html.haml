@@ -20,7 +20,7 @@
               Phased Restart In Progress
               .small=@restart_info[:time_alive]
           -else
-            -command, restart_tasks = PyrCore::System.build_restart_command
+            -command, restart_tasks = WebRedeploy::System.build_restart_command
             %small
               =command
             %div.pull-right=link_to "Bundle Install", bundle_install_pyr_core_pyr_admin_index_path, class: "btn btn-warning", "data-confirm" => "This will run a bundle install on it's own.  This is here primarily as an additional piece of tooling for troubleshooting.  The bundle install WILL ALSO BE RUN when you click Phased Restart!  Continue?", "data-method" => "get"

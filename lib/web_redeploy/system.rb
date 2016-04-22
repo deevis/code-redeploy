@@ -11,7 +11,7 @@ module WebRedeploy
 
     def self.register_application_started
       # If this is a server startup, then record this in the deployment log
-      if !defined?(::Rake) && !defined?(Rails::Console) && Rails.env.production?
+      if !defined?(::Rake) && !defined?(Rails::Console) # && Rails.env.production?
         WebRedeploy::System.write_deployment_log("server-started")
       end
       # Record the git revisions that were checked-out at startup time
@@ -80,7 +80,7 @@ module WebRedeploy
       Rails.logger.info("\033[93mSystem.pull_code\033[0m")
       log_file ||= "#{::Rails.root}/../deployments/pull_#{Time.current.strftime('%F_%H%M%S')}.log"
 
-      da = PyrCore::DeploymentAction.create(  user_id: Thread.current[:user].try(:id),
+      da = WebRedeploy::DeploymentAction.create(  user_id: Thread.current[:user].try(:id),
                                             start_time: Time.current,
                                               event: "pull_#{project_type}",
                                               log_file: log_file )
@@ -113,7 +113,7 @@ module WebRedeploy
         end
       end
       da.extras[:old_revision] = old_revision
-      ::Rails.logger.debug("\n\nPyrCore::System.pull_code: [#{cmd}]")
+      ::Rails.logger.debug("\n\nWebRedeploy::System.pull_code: [#{cmd}]")
       da.save!
       if run_command
         results = `#{cmd}`
@@ -129,7 +129,7 @@ module WebRedeploy
       da.end_time = Time.current
       da.save!
       File.open( log_file, "w+") {|f| f.write("#{cmd}\n\n"); f.write("#{results}\n\n"); f.write("Diffs:\n #{da.extras[:local_diffs]}")}
-      diff_cache = Rails.cache.fetch("PyrCore::System::diff_cache") do
+      diff_cache = Rails.cache.fetch("WebRedeploy::System::diff_cache") do
         {}
       end.with_indifferent_access
       [cmd, results, da.exit_status]
@@ -138,10 +138,10 @@ module WebRedeploy
     # Kills all resque tasks and restarts them
     # returns the list of messages summarizing the work performed
     def self.restart_resque_tasks(opts = {})
-      return "Already restarting Resque Tasks" if Rails.cache.read("PyrCore::System.restart_resque_tasks")
-      Rails.cache.write("PyrCore::System.restart_resque_tasks", true, expires_in: 1.minutes)
+      return "Already restarting Resque Tasks" if Rails.cache.read("WebRedeploy::System.restart_resque_tasks")
+      Rails.cache.write("WebRedeploy::System.restart_resque_tasks", true, expires_in: 1.minutes)
       opts[:worker_count] ||= 2
-      list = slb("PyrCore::System.restart_resque_tasks")
+      list = slb("WebRedeploy::System.restart_resque_tasks")
       # Get all pids of running resque_tasks
       pids = `ps aux | grep [r]esque | grep -v grep | cut -c 10-15`
       slb("Got pids to kill: #{pids}", list)
@@ -172,9 +172,9 @@ module WebRedeploy
     # Kills the Rules engine process and restarts it
     # returns the list of messages summarizing the work performed
     def self.restart_rules_engine
-      return "Already restarting Rules Engine" if Rails.cache.read("PyrCore::System.restart_rules_engine")
-      Rails.cache.write("PyrCore::System.restart_rules_engine", true, expires_in: 1.minutes)
-      list = slb("PyrCore::System.restart_rules_engine")
+      return "Already restarting Rules Engine" if Rails.cache.read("WebRedeploy::System.restart_rules_engine")
+      Rails.cache.write("WebRedeploy::System.restart_rules_engine", true, expires_in: 1.minutes)
+      list = slb("WebRedeploy::System.restart_rules_engine")
 
       pids = `ps aux | grep [r]ules:redis:processor | grep -v grep | cut -c 10-15`
 
@@ -249,11 +249,11 @@ module WebRedeploy
 
     # Initiates a phased-restart of the server and returns both the command that was run and the file name where the log information will be written
     def self.phased_restart
-      da = PyrCore::DeploymentAction.create(user_id: Thread.current[:user].try(:id),
+      da = WebRedeploy::DeploymentAction.create(user_id: Thread.current[:user].try(:id),
                                               start_time: Time.current,
                                               event: 'phased-restart')
       cmd, stack = build_restart_command(da)
-      Rails.logger.info "\n\nPyrCore::System.phased_restart command:\n\n #{cmd}\n\n"
+      Rails.logger.info "\n\nWebRedeploy::System.phased_restart command:\n\n #{cmd}\n\n"
       log_file = run_async_console_command('phased-restart', cmd, da)
       [cmd, log_file]
     end
@@ -271,7 +271,7 @@ module WebRedeploy
         p =~ /deployments/
       end.first
       # For development testing
-      # process = "pyr       #{PyrCore::System.instance_id}  3766  4 16:50 ?        00:00:00 sh -c pumactl -S tmp/puma.state phased-restart >> /home/pyr/pyr-greenzone/../deployments/phased-restart_2015-05-15_105019.log 2>&1"
+      # process = "pyr       #{WebRedeploy::System.instance_id}  3766  4 16:50 ?        00:00:00 sh -c pumactl -S tmp/puma.state phased-restart >> /home/pyr/pyr-greenzone/../deployments/phased-restart_2015-05-15_105019.log 2>&1"
       if process.present?
         Rails.logger.info "System.puma_restart_status: [#{process}]"
         parts = process.split
@@ -310,13 +310,13 @@ module WebRedeploy
     end
 
     def self.write_deployment_log(event_type="server-started", da = nil)
-      da ||= PyrCore::DeploymentAction.create(user_id: Thread.current[:user].try(:id),
+      da ||= WebRedeploy::DeploymentAction.create(user_id: Thread.current[:user].try(:id),
                                               event: event_type)
       Rails.logger.info "Writing deployment_log[#{event_type}]"
       FileUtils.mkdir "#{::Rails.root}/../deployments" unless File.exist?("#{::Rails.root}/../deployments")
       case event_type
       when "server-started"
-        data = PyrCore::System.build_version_info(false)
+        data = WebRedeploy::System.build_version_info(false)
         data.delete(:last_start_statistics) # don't include previous stats in these stats
         da.extras[:instance_id] = @@instance_id
       else
@@ -340,13 +340,13 @@ module WebRedeploy
       Rails.logger.info("\033[93mSystem.switch_branch(#{new_branch})\033[0m")
       log_file ||= "#{::Rails.root}/../deployments/switch_branch_#{new_branch}_#{Time.current.strftime('%F_%H%M%S')}.log"
 
-      da = PyrCore::DeploymentAction.create(  user_id: Thread.current[:user].try(:id),
+      da = WebRedeploy::DeploymentAction.create(  user_id: Thread.current[:user].try(:id),
                                             start_time: Time.current,
                                               event: "switch_branch_#{new_branch}",
                                               log_file: log_file )
       cmd = "git fetch origin; git checkout #{new_branch}; cd ../pyr; git fetch origin; git checkout #{new_branch}"
       da.command = cmd
-      ::Rails.logger.debug("\n\nPyrCore::System.pull_code: [#{cmd}]")
+      ::Rails.logger.debug("\n\nWebRedeploy::System.pull_code: [#{cmd}]")
       da.save!
       results = `#{cmd}`
       da.exit_status = $?.exitstatus rescue nil
@@ -378,7 +378,7 @@ module WebRedeploy
         end
       end
 
-      diff_cache = Rails.cache.fetch("PyrCore::System::diff_cache") do
+      diff_cache = Rails.cache.fetch("WebRedeploy::System::diff_cache") do
         {}
       end.with_indifferent_access
 
@@ -398,7 +398,7 @@ module WebRedeploy
         diff_cache[:diff] = diff
         diff_cache[:diff_files] = diff_files
         Rails.logger.info "\033[93mstoring diff_cache\033[0m: #{diff_cache}"
-        Rails.cache.write("PyrCore::System::diff_cache", diff_cache, expires_in: 5.minutes)
+        Rails.cache.write("WebRedeploy::System::diff_cache", diff_cache, expires_in: 5.minutes)
       end
       m[:last_start_statistics] = get_last_start_statistics
       m.merge!(t1.value)    # again - this will block until t1 is complete
@@ -509,7 +509,7 @@ module WebRedeploy
     end
 
 
-    def self.build_restart_command(da = nil, include_deploy: true, include_restart: true)  # PyrCore::DeploymentAction
+    def self.build_restart_command(da = nil, include_deploy: true, include_restart: true)  # WebRedeploy::DeploymentAction
       cmd = ""
       task_chain = []
       if include_deploy
@@ -535,11 +535,8 @@ module WebRedeploy
 
       if include_restart
         cmd += " && " if cmd.present?
-        if PyrCore::AppSetting.application_server == 'puma'
-          cmd += "pumactl -S tmp/puma.state phased-restart"
-        else
-          cmd += "passenger-config restart-app /"
-        end
+        cmd += WebRedeploy.restart_command
+        # cmd += "passenger-config restart-app /"
       end
       [cmd, task_chain]
     end
@@ -547,11 +544,11 @@ module WebRedeploy
 
     # Look at the most recent deployment revisions and determine what needs to be done
     # to restart code based on what is currently brought down from Github
-    def self.compute_restart_tasks(stat_now = nil, da = nil)  # da == PyrCore::DeploymentAction
+    def self.compute_restart_tasks(stat_now = nil, da = nil)  # da == WebRedeploy::DeploymentAction
       Rails.logger.info("System.compute_restart_tasks")
       stat_then = get_last_start_statistics   # Revisions as of last server start
       task_chain = [:phased_restart]
-      stat_now ||= PyrCore::System.build_version_info(false)   # Revisions currently checked out
+      stat_now ||= WebRedeploy::System.build_version_info(false)   # Revisions currently checked out
       Rails.logger.info("stat_now = #{stat_now}")
       system_user = stat_now[:server_processes].first[:user] rescue nil
       if stat_then

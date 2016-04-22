@@ -5,6 +5,7 @@
 /InstalledFiles
 /pkg/
 /spec/reports/
+/spec/deployments/
 /spec/examples.txt
 /spec/dummy/db/
 /spec/dummy/log/
