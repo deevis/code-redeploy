@@ -33,9 +33,9 @@ class WebRedeploy::AppController < ApplicationController
     # puts "\n\n\n\n"
     @config = (YAML.load_file("#{ENV['HOME']}/.code_environments.yml") rescue {}) || {}
     @config[:local] = ["http://localhost"]
-    fetch_origin = (params[:fetch_origin] != "false")
+    regenerate_diffs = (params[:regenerate_diffs] != "false")
 
-    if !fetch_origin && @@user_results[get_current_user]
+    if !regenerate_diffs && @@user_results[get_current_user]
       Rails.logger.info("   code_environments: Using saved results for user: #{get_current_user.try(:username) || get_current_user}")
       data = @@user_results[get_current_user]
       @command = data[:command]
@@ -54,7 +54,7 @@ class WebRedeploy::AppController < ApplicationController
       @results[e] = {}
       threads << Thread.new do
         ActiveRecord::Base.connection_pool.with_connection do
-          _lookup_code_environment(e, fetch_origin)
+          _lookup_code_environment(e, regenerate_diffs)
         end
       end
     end
@@ -73,12 +73,12 @@ class WebRedeploy::AppController < ApplicationController
     Rails.logger.info("")
     Rails.logger.info("")
     @@user_results[get_current_user] = { command: command, command_results: command_results, exit_status: exit_status }
-    redirect_to web_redeploy.code_environments_path(fetch_origin: false)
+    redirect_to web_redeploy.code_environments_path(regenerate_diffs: false)
   end
 
   def switch_branch
     WebRedeploy::System.switch_branch(params[:new_branch])
-    redirect_to web_redeploy.code_environments_path(fetch_origin: false)
+    redirect_to web_redeploy.code_environments_path(regenerate_diffs: false)
   end
 
 
@@ -93,7 +93,7 @@ class WebRedeploy::AppController < ApplicationController
     Rails.logger.info("")
     Rails.logger.info("")
     @@user_results[get_current_user] = { command: command, log_file: log_file }
-    redirect_to web_redeploy.code_environments_path(fetch_origin: false)
+    redirect_to web_redeploy.code_environments_path(regenerate_diffs: false)
   end
 
   def restart_resque_tasks
@@ -116,7 +116,7 @@ class WebRedeploy::AppController < ApplicationController
 
   def bundle_install
     command, command_results, exit_status = WebRedeploy::System.bundle_install
-    redirect_to web_redeploy.code_environments_path(fetch_origin: false)
+    redirect_to web_redeploy.code_environments_path(regenerate_diffs: false)
   end
 
   def tail_log
@@ -154,10 +154,10 @@ class WebRedeploy::AppController < ApplicationController
 
 
   private
-  def _lookup_code_environment(e, fetch_origin = true)
+  def _lookup_code_environment(e, regenerate_diffs = true)
     @config[e].each do |server|
       if e == :local
-        @results[e][server] = WebRedeploy::System.build_version_info(fetch_origin).with_indifferent_access
+        @results[e][server] = WebRedeploy::System.build_version_info(regenerate_diffs).with_indifferent_access
         Rails.logger.info ""
         Rails.logger.info "  Using local build_version_info: #{@results[e][server]}"
         Rails.logger.info ""
