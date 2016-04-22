@@ -17,6 +17,7 @@ Gem::Specification.new do |gem|
   gem.add_runtime_dependency 'rails'
   gem.add_runtime_dependency 'haml'
   
+  gem.add_development_dependency 'byebug'
   gem.add_development_dependency 'better_errors'
   gem.add_development_dependency 'binding_of_caller'
   gem.add_development_dependency 'rspec'

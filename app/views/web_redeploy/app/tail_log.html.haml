@@ -1,0 +1,6 @@
+%div.small
+  Hint: set params[:log_file] to view other logs
+%div.small
+  Hint: set params[:grep] to restrict results  eg: ?grep=END:+current_user\[.*darren
+  
+=render "tail_log_console", log_file: params[:log_file], lines: params[:lines], detect_end_strategy: params[:detect_end_strategy] 

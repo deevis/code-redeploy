@@ -1,0 +1,83 @@
+-log_file ||= params[:log_file]
+-lines ||= params[:lines]
+-detect_end_strategy ||= params[:detect_end_strategy]
+-grep = params[:grep]
+-unique_id = SecureRandom.hex(6)
+
+:css
+  #command-results {
+    margin-top:10px;
+    width:100%;
+    min-height:300px;
+    border:1px dashed #333;
+    background-color: #ccc;
+    padding:10px;
+  }
+
+  #disclaimer {
+    border:1px dashed rgba(255, 0, 0, 0.4);
+    background-color:1px dashed rgba(255, 0, 0, 0.2);
+    padding:3px;
+    margin:5px;
+  }
+
+.row
+  .col-md-6
+    %h1 
+      Tailing
+      %small
+        =link_to log_file, web_redeploy.tail_log_path(grep: grep, log_file: log_file, detect_end_strategy: detect_end_strategy)
+    #enabled-controls
+      Enabled&nbsp;
+      %input{id:"enabled-checkbox", type:"checkbox", checked: "checked"}
+      %button{onclick:"restartLoggingJustInCase();", class:"btn btn-info btn-xs"} Restart Tail
+  .col-md-6
+    #disclaimer Tailed file is displayed in reverse order, with the newest lines at the top of the display
+
+.row
+  .col-md-12
+    #command-results
+      %div ...retrieving results
+
+:javascript
+  var uniqueCount = 3141592;
+
+  function restartLoggingJustInCase() {
+    $("#enabled-checkbox").prop("checked", "checked");
+    fetch_tail();
+  }
+
+  function fetch_tail() {
+    if ($("#enabled-checkbox").is(":checked") ) {
+      $.get("#{web_redeploy.tail_log_path(grep: grep, u: unique_id, log_file: log_file, lines: lines, detect_end_strategy: detect_end_strategy, format: 'json')}&_uid=" + uniqueCount,
+      updateOutput);
+      uniqueCount++;
+    } else {
+      setTimeout(fetch_tail, 2500);  
+    }
+  }
+
+  function updateOutput(data) {
+    var lines = data.lines;
+    var results = $("#command-results");
+    results.html("");
+    for(i = 0; i < lines.length; i++) {
+      results.append(lines[i]);
+      results.append("<br/>");
+    }
+
+    var success = data.success;
+    if (success == "true" || success == "false") {
+      $("#enabled-controls").remove();
+      var status_div = $("#command-status .alert");
+      if (status_div !== undefined) {
+        status_div.toggleClass( (success == "true") ? "alert-success" : "alert-danger" );
+        status_div.html( (success == "true") ? "Command Results - SUCCESS" : "Command Results - ERRORS!");
+      }
+    } else {
+      setTimeout(fetch_tail, 1000);
+    }
+
+  }
+
+  $(document).ready( { fetch_tail(); });

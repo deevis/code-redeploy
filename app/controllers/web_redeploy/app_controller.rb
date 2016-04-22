@@ -34,10 +34,10 @@ class WebRedeploy::AppController < ApplicationController
     @config = (YAML.load_file("#{ENV['HOME']}/.code_environments.yml") rescue {}) || {}
     @config[:local] = ["http://localhost"]
     regenerate_diffs = (params[:regenerate_diffs] != "false")
+    show_results = (params[:results] == "true")
 
-    if !regenerate_diffs && @@user_results[get_current_user]
-      Rails.logger.info("   code_environments: Using saved results for user: #{get_current_user.try(:username) || get_current_user}")
-      data = @@user_results[get_current_user]
+    data = @@user_results[get_current_user]
+    if show_results && data.present?
       @command = data[:command]
       @command_results = data[:command_results]
       @exit_status = data[:exit_status]
@@ -78,7 +78,7 @@ class WebRedeploy::AppController < ApplicationController
 
   def switch_branch
     WebRedeploy::System.switch_branch(params[:new_branch])
-    redirect_to web_redeploy.code_environments_path(regenerate_diffs: false)
+    redirect_to web_redeploy.code_environments_path(results: true)
   end
 
 
@@ -93,7 +93,7 @@ class WebRedeploy::AppController < ApplicationController
     Rails.logger.info("")
     Rails.logger.info("")
     @@user_results[get_current_user] = { command: command, log_file: log_file }
-    redirect_to web_redeploy.code_environments_path(regenerate_diffs: false)
+    redirect_to web_redeploy.code_environments_path(results: true)
   end
 
   def restart_resque_tasks
@@ -116,7 +116,8 @@ class WebRedeploy::AppController < ApplicationController
 
   def bundle_install
     command, command_results, exit_status = WebRedeploy::System.bundle_install
-    redirect_to web_redeploy.code_environments_path(regenerate_diffs: false)
+    @@user_results[get_current_user] = { command: command, command_results: command_results, exit_status: exit_status }
+    redirect_to web_redeploy.code_environments_path(results: true)
   end
 
   def tail_log
