@@ -73,12 +73,12 @@ class WebRedeploy::AppController < ApplicationController
     Rails.logger.info("")
     Rails.logger.info("")
     @@user_results[get_current_user] = { command: command, command_results: command_results, exit_status: exit_status }
-    redirect_to code_environments_pyr_core_pyr_admin_index_path(fetch_origin: false)
+    redirect_to code_environments_path(fetch_origin: false)
   end
 
   def switch_branch
     WebRedeploy::System.switch_branch(params[:new_branch])
-    redirect_to code_environments_pyr_core_pyr_admin_index_path(fetch_origin: false)
+    redirect_to code_environments_path(fetch_origin: false)
   end
 
   def phased_restart
@@ -91,7 +91,7 @@ class WebRedeploy::AppController < ApplicationController
     Rails.logger.info("")
     Rails.logger.info("")
     @@user_results[get_current_user] = { command: command, log_file: log_file }
-    redirect_to code_environments_pyr_core_pyr_admin_index_path(fetch_origin: false)
+    redirect_to code_environments_path(fetch_origin: false)
   end
 
   def restart_resque_tasks
@@ -114,7 +114,7 @@ class WebRedeploy::AppController < ApplicationController
 
   def bundle_install
     command, command_results, exit_status = WebRedeploy::System.bundle_install
-    redirect_to code_environments_pyr_core_pyr_admin_index_path(fetch_origin: false)
+    redirect_to code_environments_path(fetch_origin: false)
   end
 
   def tail_log
