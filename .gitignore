@@ -7,7 +7,7 @@
 /spec/reports/
 /spec/deployments/
 /spec/examples.txt
-/spec/dummy/db/
+/spec/dummy/db/*.sqlite3
 /spec/dummy/log/
 /spec/dummy/tmp/
 /test/tmp/
