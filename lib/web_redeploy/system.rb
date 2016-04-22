@@ -129,9 +129,7 @@ module WebRedeploy
       da.end_time = Time.current
       da.save!
       File.open( log_file, "w+") {|f| f.write("#{cmd}\n\n"); f.write("#{results}\n\n"); f.write("Diffs:\n #{da.extras[:local_diffs]}")}
-      diff_cache = Rails.cache.fetch("WebRedeploy::System::diff_cache") do
-        {}
-      end.with_indifferent_access
+      Rails.cache.delete("WebRedeploy::System::diff_cache")
       [cmd, results, da.exit_status]
     end
 
