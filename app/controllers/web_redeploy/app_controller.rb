@@ -2,6 +2,8 @@ class WebRedeploy::AppController < ApplicationController
 
   before_action :authorize_user, except: [:version_info]
 
+  @@user_results ||= {}
+
   def database_statistics
     case ActiveRecord::Base.connection.class.to_s
     when "ActiveRecord::ConnectionAdapters::MysqlAdapter"
@@ -33,9 +35,9 @@ class WebRedeploy::AppController < ApplicationController
     @config[:local] = ["http://localhost"]
     fetch_origin = (params[:fetch_origin] != "false")
 
-    if !fetch_origin && @@user_results[current_user]
-      Rails.logger.info("   code_environments: Using saved results for user: #{current_user.username}")
-      data = @@user_results[current_user]
+    if !fetch_origin && @@user_results[get_current_user]
+      Rails.logger.info("   code_environments: Using saved results for user: #{get_current_user.username}")
+      data = @@user_results[get_current_user]
       @command = data[:command]
       @command_results = data[:command_results]
       @exit_status = data[:exit_status]
@@ -70,7 +72,7 @@ class WebRedeploy::AppController < ApplicationController
     Rails.logger.info("             exit_status: #{exit_status}")
     Rails.logger.info("")
     Rails.logger.info("")
-    @@user_results[current_user] = { command: command, command_results: command_results, exit_status: exit_status }
+    @@user_results[get_current_user] = { command: command, command_results: command_results, exit_status: exit_status }
     redirect_to code_environments_pyr_core_pyr_admin_index_path(fetch_origin: false)
   end
 
@@ -88,7 +90,7 @@ class WebRedeploy::AppController < ApplicationController
     Rails.logger.info("             log_file: #{log_file}")
     Rails.logger.info("")
     Rails.logger.info("")
-    @@user_results[current_user] = { command: command, log_file: log_file }
+    @@user_results[get_current_user] = { command: command, log_file: log_file }
     redirect_to code_environments_pyr_core_pyr_admin_index_path(fetch_origin: false)
   end
 
@@ -174,7 +176,11 @@ class WebRedeploy::AppController < ApplicationController
   end
 
   def authorize_user 
-    WebRedeploy.authorize_user.call 
+    WebRedeploy.authorize_user.call(get_current_user)
+  end
+
+  def get_current_user 
+    defined?(::Devise) ? current_user : :anonymous_coward
   end
 
 end

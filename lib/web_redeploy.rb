@@ -8,7 +8,6 @@ module WebRedeploy
   @@restart_command = "pumactl -S tmp/puma.state phased-restart" 
 
   mattr_accessor :authorize_user 
-  @@authorize_user = -> { defined?(::Devise) && current_user && current_user.admin? }
-
+  @@authorize_user = -> (user) { user.present? && user.try(:admin?) } 
 
 end
