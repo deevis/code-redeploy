@@ -1,0 +1,15 @@
+%tbody
+  -data.each do |r| 
+    -s = r.with_indifferent_access
+    %tr
+      %td=s["user"] 
+      %td=s["pid"] 
+      %td=s["time_alive"] 
+
+-if server == :local && request.format == :html
+  =page_js do
+    :javascript
+      function updateLocalPumaData() {
+        $.get("#{puma_server_processes_pyr_core_pyr_admin_index_path}");
+      }
+      setInterval(updateLocalPumaData, 5000);
