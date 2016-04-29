@@ -14,10 +14,22 @@ Gemfile
 
 `gem 'web_redeploy', github: 'deevis/web_redeploy`
 
+routes.rb
+```
+Rails.application.routes.draw do
 
+  mount WebRedeploy::Engine => "/web_redeploy"
+  
+end
+```
 
+Migrations
+```
+rake web_redeploy:install:migrations
+rake db:migrate
+```
 
-# Development
+# Development dummy application
 
 ### Running locally
 
