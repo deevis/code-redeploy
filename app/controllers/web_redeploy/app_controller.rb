@@ -1,5 +1,7 @@
 class WebRedeploy::AppController < ApplicationController
 
+  layout false
+
   before_action :authorize_user, except: [:version_info]
 
   @@user_results ||= {}
