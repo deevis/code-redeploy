@@ -9,6 +9,6 @@
 -if server == :local && request.format == :html
   :javascript
     function updateLocalPumaData() {
-      $.get("#{web_redeploy.puma_server_processes_pyr_core_pyr_admin_index_path}");
+      $.get("#{web_redeploy.puma_server_processes_path}");
     }
     setInterval(updateLocalPumaData, 5000);
