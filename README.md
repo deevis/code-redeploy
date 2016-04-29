@@ -14,7 +14,14 @@ Gemfile
 
 `gem 'web_redeploy', github: 'deevis/web_redeploy`
 
+routes.rb
+```
+Rails.application.routes.draw do
 
+  mount WebRedeploy::Engine => "/web_redeploy"
+  
+end
+```
 
 
 # Development
