@@ -23,8 +23,13 @@ Rails.application.routes.draw do
 end
 ```
 
+Migrations
+```
+rake web_redeploy:install:migrations
+rake db:migrate
+```
 
-# Development
+# Development dummy application
 
 ### Running locally
 
